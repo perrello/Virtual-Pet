@@ -7,7 +7,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var urlText = "https://pets.studioperrello.com/packs/cube/manifest.json"
+    @State private var urlText = "https://pets.studioperrello.com/packs/gengar/manifest.json"
     @State private var index = PackIndex()
     @State private var isInstalling = false
 
