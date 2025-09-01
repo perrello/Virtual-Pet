@@ -49,6 +49,7 @@ struct SpriteSheetView: View {
         }
         return AnyView(
             Image(uiImage: UIImage(cgImage: piece))
+                .renderingMode(.original)
                 .interpolation(.none)
                 .resizable()
                 .clipped()

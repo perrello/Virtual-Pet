@@ -9,7 +9,6 @@ import SwiftUI
 import ActivityKit
 import os
 
-// IslandPetLiveActivity.swift (widgetsExtension)
 private func currentSpritePathAndCfg() -> (path: String, cfg: SpriteSheetConfig, fps: Double) {
     let base = FileManager.default
         .containerURL(forSecurityApplicationGroupIdentifier: SharedStore.groupID)!
