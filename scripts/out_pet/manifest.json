@@ -1,0 +1,21 @@
+{
+  "id": "com.example.pet.pet",
+  "name": "pet",
+  "variants": [
+    {
+      "scale": 3,
+      "cols": 6,
+      "rows": 3,
+      "cellPx": { "w": 480, "h": 480 },
+      "sprite": "sprite@3x.png"
+    },
+    {
+      "scale": 3,
+      "cols": 3,
+      "rows": 3,
+      "cellPx": { "w": 48, "h": 48 },
+      "sprite": "sprite_small@3x.png"
+    }
+  ],
+  "fps": 2.000000
+}

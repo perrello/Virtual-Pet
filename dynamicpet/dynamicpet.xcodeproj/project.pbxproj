@@ -70,6 +70,7 @@
 		17858D4C2E65B4BA00A3C890 /* Exceptions for "shared" folder in "widgetsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				"Custom-Regular.otf",
 				PackIndex.swift,
 				PetAttributes.swift,
 				SharedStore.swift,

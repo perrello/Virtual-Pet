@@ -6,11 +6,13 @@
 //
 
 import ActivityKit
+import Foundation
 
 struct PetAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         var frameIndex: Int
         var mood: String
+        var start: Date
     }
     var name: String
 }

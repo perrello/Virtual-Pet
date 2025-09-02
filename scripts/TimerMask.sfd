@@ -1,0 +1,111 @@
+StartFontForge 20220308
+Comment: Minimal timer-mask font
+FontName: TimerMask
+FullName: TimerMask-Regular
+FamilyName: TimerMask
+Weight: Regular
+UComments: Created for iOS Widget timer-mask
+Version: 1.000
+ItalicAngle: 0
+UnderlinePosition: -100
+UnderlineWidth: 50
+Ascent: 1000
+Descent: 0
+LayerCount: 2
+Layer: 0 0 "Fore" 1
+Layer: 1 0 "Back" 0
+Encoding: UnicodeBmp
+AntiAlias: 1
+ScaleToFit: 0
+BeginChars: 65536 16
+
+# --- frame_on: Private Use U+E000 ---
+StartChar: frame_on
+Encoding: 57344 57344 0
+Width: 1000
+Flags: W
+LayerCount: 2
+Fore
+SplineSet
+0 0 m 0
+0 1000 l 0
+1000 1000 l 0
+1000 0 l 0
+EndSplineSet
+EndChar
+
+# --- frame_off: Private Use U+E001 (leeg) ---
+StartChar: frame_off
+Encoding: 57345 57345 1
+Width: 1000
+Flags: W
+EndChar
+
+# --- SPACE U+0020 ---
+StartChar: space
+Encoding: 32 32 2
+Width: 600
+Flags: W
+EndChar
+
+# --- COLON U+003A ---
+StartChar: colon
+Encoding: 58 58 3
+Width: 600
+Flags: W
+EndChar
+
+# --- DIGITS 0..9 (allemaal leeg) ---
+StartChar: zero
+Encoding: 48 48 4
+Width: 600
+Flags: W
+EndChar
+StartChar: one
+Encoding: 49 49 5
+Width: 600
+Flags: W
+EndChar
+StartChar: two
+Encoding: 50 50 6
+Width: 600
+Flags: W
+EndChar
+StartChar: three
+Encoding: 51 51 7
+Width: 600
+Flags: W
+EndChar
+StartChar: four
+Encoding: 52 52 8
+Width: 600
+Flags: W
+EndChar
+StartChar: five
+Encoding: 53 53 9
+Width: 600
+Flags: W
+EndChar
+StartChar: six
+Encoding: 54 54 10
+Width: 600
+Flags: W
+EndChar
+StartChar: seven
+Encoding: 55 55 11
+Width: 600
+Flags: W
+EndChar
+StartChar: eight
+Encoding: 56 56 12
+Width: 600
+Flags: W
+EndChar
+StartChar: nine
+Encoding: 57 57 13
+Width: 600
+Flags: W
+EndChar
+
+EndChars
+EndSplineFont

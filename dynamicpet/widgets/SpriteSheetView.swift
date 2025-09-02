@@ -12,7 +12,6 @@ private let spriteLog = Logger(subsystem: "com.perrello.dynamicpet", category: "
 struct SpriteSheetConfig: Hashable {
     let cols: Int
     let rows: Int
-    /// Pixel-afmetingen van één cel (bijv. 480×480)
     let cellPx: CGSize
 }
 
