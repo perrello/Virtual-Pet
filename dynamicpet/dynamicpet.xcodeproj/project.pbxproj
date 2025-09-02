@@ -77,11 +77,21 @@
 			);
 			target = 17858D2B2E65A50000A3C890 /* widgetsExtension */;
 		};
+		17EE6BDC2E673FAB004E90C3 /* Exceptions for "dynamicpet" folder in "dynamicpet" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 17858CFC2E65A23200A3C890 /* dynamicpet */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		17858CFF2E65A23200A3C890 /* dynamicpet */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				17EE6BDC2E673FAB004E90C3 /* Exceptions for "dynamicpet" folder in "dynamicpet" target */,
+			);
 			path = dynamicpet;
 			sourceTree = "<group>";
 		};
@@ -527,9 +537,11 @@
 				CODE_SIGN_ENTITLEMENTS = dynamicpet/dynamicpet.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 276YTAKRFV;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = dynamicpet/Info.plist;
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -568,9 +580,11 @@
 				CODE_SIGN_ENTITLEMENTS = dynamicpet/dynamicpet.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 276YTAKRFV;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = dynamicpet/Info.plist;
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
