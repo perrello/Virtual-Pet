@@ -1,9 +1,6 @@
 //
 //  IslandPetLiveActivity.swift
 //  dynamicpet
-//
-//  Vereenvoudigd
-//
 
 import WidgetKit
 import SwiftUI
@@ -12,55 +9,33 @@ import os
 
 private let petLog = Logger(subsystem: "com.perrello.dynamicpet", category: "PetWidget")
 
-// MARK: - Timer-mask bouwstenen
-
-/// 1 Hz blink label (1s aan / 1s uit), met secondes exact in het midden.
-/// Gebruik je eigen blinker-font (met ligatures).
-private struct Blink1Hz: View {
-    static let ref = Date() - 60
-    var offset: TimeInterval = 0
-    var fontName: String = "Custom-Regular"
-
-    var body: some View {
-        GeometryReader { geo in
-            let s = max(geo.size.width, geo.size.height)
-            Text(Blink1Hz.ref - offset, style: .timer)
-                .font(.custom(fontName, size: s))
-                .frame(width: s * 9, height: s)
-                .multilineTextAlignment(.trailing)
-                .offset(x: -s * 8) // secondes midden
-        }
-        .clipped()
-        .accessibilityHidden(true)
-    }
-}
-
-/// Venster: overlap van 2 blinkers, gecentreerd + kleine overlap tegen gaps.
-private struct WindowMask: View {
-    var start: TimeInterval      // begin binnen 0..2
-    var length: TimeInterval     // duur
-    var epsilon: TimeInterval    // 0.02–0.06 s
-
-    var body: some View {
-        // centreer venster binnen slot + extra overlap
-        let d = min(1.0, length + 2 * epsilon)
-        let s = start + max(0, (length - (length - 2 * epsilon)) / 2.0)
-        Blink1Hz(offset: s)
-            .mask(Blink1Hz(offset: s + (1.0 - d)))
-            .accessibilityHidden(true)
-    }
-}
-
 // MARK: - Helpers
 
+private extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
+    }
+}
+private extension Array {
+    subscript(safe i: Index) -> Element? { indices.contains(i) ? self[i] : nil }
+}
+private extension Date {
+    var flooredToSecond: Date {
+        let t = timeIntervalSince1970
+        return Date(timeIntervalSince1970: floor(t))
+    }
+}
+
 /// Kies `count` indices evenredig uit `0..<total` (stabiel, zonder dubbels).
+/// Deze variant centreert binnen de bakjes (minder links-gewogen).
 private func spacedIndices(total: Int, count: Int) -> [Int] {
     guard total > 0, count > 0 else { return [] }
+    let step = Double(total) / Double(count)
     var out: [Int] = []
     var seen = Set<Int>()
     for k in 0..<count {
-        let i = Int((Double(k) * Double(total)) / Double(count))
-        if seen.insert(i).inserted { out.append(i) }
+        let idx = min(Int(floor((Double(k) + 0.5) * step)), total - 1)
+        if seen.insert(idx).inserted { out.append(idx) }
     }
     // Vul aan als afgeronde deling toch gaten liet
     var i = 0
@@ -79,7 +54,62 @@ private func mappedIndex(_ n: Int, cols: Int, rows: Int, columnMajor: Bool) -> I
     return row * cols + col
 }
 
-// MARK: - Sprite-animatie met timer-masks
+/// Schaal helper: duration-space (0..duration) -> Blink1Hz-space (0..2)
+@inline(__always)
+private func toBlinkSpace(_ t: Double, duration: Double) -> Double {
+    guard duration > 0 else { return 0 }
+    return (t.truncatingRemainder(dividingBy: duration)) * (2.0 / duration)
+}
+
+// MARK: - Timer-mask bouwstenen
+
+/// 1 Hz blink label (1s aan / 1s uit), met secondes exact in het midden.
+/// Gebruik je eigen blinker-font (met ligatures).
+private struct Blink1Hz: View {
+    // Op hele seconde uitlijnen om zweven te voorkomen
+    static let ref = Date().flooredToSecond - 60
+    var offset: TimeInterval = 0
+    var fontName: String = "Custom-Regular"
+
+    var body: some View {
+        GeometryReader { geo in
+            let s = max(geo.size.width, geo.size.height)
+            Text(Blink1Hz.ref - offset, style: .timer)
+                .font(.custom(fontName, size: s))
+                .frame(width: s * 9, height: s)
+                .multilineTextAlignment(.trailing)
+                .offset(x: -s * 8) // secondes midden
+        }
+        .clipped()
+        .accessibilityHidden(true)
+    }
+}
+
+/// Venster binnen een loop van `duration` seconden; overlap in echte seconden.
+private struct WindowMaskScaled: View {
+    var start: TimeInterval      // in 0..duration
+    var length: TimeInterval     // duur (seconden)
+    var epsilon: TimeInterval    // 0.02–0.06 s (seconden)
+    var duration: TimeInterval
+
+    var body: some View {
+        // clamp & overlap in *echte* seconden
+        let baseLen = max(0.0, length)
+        let d = min(duration, max(0.0, baseLen + 2 * max(0.0, epsilon)))
+        // centreer venster binnen slot + extra overlap
+        let s = start + max(0, (baseLen - (baseLen - 2 * max(0.0, epsilon))) / 2.0)
+
+        // schaal naar blink-space (0..2)
+        let sBlink = toBlinkSpace(s, duration: duration)
+        let dBlink = min(1.0, max(0.0, d * (2.0 / duration))) // mask-combinator verwacht 0..1
+
+        Blink1Hz(offset: sBlink)
+            .mask(Blink1Hz(offset: sBlink + (1.0 - dBlink)))
+            .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Sprite-animatie met duration-geschaalde timer-masks
 
 /// Robuuste, glitch-vrije animatie gedreven door 1 Hz timer-masks.
 /// - Parameters:
@@ -95,15 +125,15 @@ private struct SpriteTimerAnimation: View {
 
     var body: some View {
         let totalFrames = max(cfg.cols * cfg.rows, 1)
-        let desiredCount = max(1, Int(round(fps * duration)))
-        let frames = spacedIndices(total: totalFrames, count: min(desiredCount, totalFrames))
+        let desiredCount = max(1, Int(round(fps * max(duration, 0.0001))))
+        let framesCount = min(desiredCount, totalFrames)
+        let frames = spacedIndices(total: totalFrames, count: framesCount)
 
-        // 2s motor → verdeel gekozen frames gelijkmatig over 0..2
-        let slot = 2.0 / Double(max(frames.count, 1))
-        // Adaptieve overlap (20–60 ms), schaalt mee met tempo
-        let epsilon = min(0.06, max(0.02, slot * 0.35))
+        // slotduur is precies 1/fps
+        let slot = 1.0 / max(fps, 0.0001)
+        // Adaptieve overlap (20–60 ms), nooit > ~49% van slot
+        let epsilon = min(0.06, min(0.35 * slot, 0.49 * slot))
 
-        // Bovenstack (1..2s) krijgt eigen mask om de knip op t=1 te verzachten
         return ZStack {
             // Alle frames in één ForEach; we maskeren per frame in zijn eigen slot.
             ForEach(Array(frames.enumerated()), id: \.offset) { (k, raw) in
@@ -116,18 +146,29 @@ private struct SpriteTimerAnimation: View {
                                 index: idx,
                                 desiredSizePt: CGSize(width: size, height: size))
                     .mask(
-                        WindowMask(start: Double(k) * slot, length: slot, epsilon: epsilon)
-                            .frame(width: size, height: size)
+                        WindowMaskScaled(
+                            start: Double(k) * slot,
+                            length: slot,
+                            epsilon: epsilon,
+                            duration: duration
+                        )
+                        .frame(width: size, height: size)
                     )
                     .accessibilityHidden(true)
             }
         }
-        // Maak alleen het 2e-seconde deel (indices in 1..2s) zichtbaar bovenop:
-        // dit volgt hetzelfde principe als de oorspronkelijke "bovenstack".
+        // Maak de hele loopduur zichtbaar, in segmenten van max. 1s
         .mask(
             ZStack {
-                WindowMask(start: 0.0, length: 1.0, epsilon: 0) // 0..1
-                WindowMask(start: 1.0, length: 1.0, epsilon: 0.02) // 1..2 met mini-overlap
+                let seconds = Int(ceil(max(duration, 0)))
+                ForEach(0..<max(seconds, 1), id: \.self) { sec in
+                    WindowMaskScaled(
+                        start: Double(sec),
+                        length: min(1.0, duration - Double(sec)),
+                        epsilon: sec == 0 ? 0.0 : 0.02, // mini-overlap tussen seconden
+                        duration: duration
+                    )
+                }
             }
             .frame(width: size, height: size)
         )
@@ -178,16 +219,6 @@ private func currentSpritePathAndCfg()
     }
 
     return (path, cfg, fps, packID ?? "default-pack", petName)
-}
-
-// Kleine helpers
-private extension Comparable {
-    func clamped(to range: ClosedRange<Self>) -> Self {
-        min(max(self, range.lowerBound), range.upperBound)
-    }
-}
-private extension Array {
-    subscript(safe i: Index) -> Element? { indices.contains(i) ? self[i] : nil }
 }
 
 // MARK: - Widget
