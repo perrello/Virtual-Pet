@@ -12,7 +12,8 @@ struct PetAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         var frameIndex: Int
         var mood: String
-        var start: Date
+        var start: Date //TODO why?
+        var spriteRevision: String // unique string
     }
     var name: String
 }

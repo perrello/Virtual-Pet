@@ -10,7 +10,7 @@ import SwiftUI
 @main
 struct dynamicpetApp: App {
     var body: some Scene {
-        let _ = PetActivity.start(fps: 1.0, mood: "Sad") //TODO prettier
+        let _ = PetActivity.start(fps: 1.0, mood: "Sad") //TODO prettier, start from action etc?
         WindowGroup {
             ContentView()
         }

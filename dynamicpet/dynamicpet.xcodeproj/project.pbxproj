@@ -73,7 +73,15 @@
 				"Custom-Regular.otf",
 				PackIndex.swift,
 				PetAttributes.swift,
+				PetManifest.swift,
 				SharedStore.swift,
+			);
+			target = 17858D2B2E65A50000A3C890 /* widgetsExtension */;
+		};
+		17CFB82C2E69DBE100850B75 /* Exceptions for "dynamicpet" folder in "widgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				PackManager.swift,
 			);
 			target = 17858D2B2E65A50000A3C890 /* widgetsExtension */;
 		};
@@ -91,6 +99,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				17EE6BDC2E673FAB004E90C3 /* Exceptions for "dynamicpet" folder in "dynamicpet" target */,
+				17CFB82C2E69DBE100850B75 /* Exceptions for "dynamicpet" folder in "widgetsExtension" target */,
 			);
 			path = dynamicpet;
 			sourceTree = "<group>";

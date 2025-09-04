@@ -22,6 +22,14 @@ struct PackMeta: Codable, Hashable, Identifiable {
 struct PackIndex: Codable {
     var installed: [PackMeta] = []
     var activePackId: String? = nil
+    
+    func getActivePack() -> PackMeta? {
+        return getPack(id: activePackId ?? "")
+    }
+    
+    func getPack(id:String) -> PackMeta? {
+        return installed.first(where: {$0.id == id})
+    }
 
     mutating func upsert(_ meta: PackMeta) {
         if let i = installed.firstIndex(where: { $0.id == meta.id }) { installed[i] = meta }

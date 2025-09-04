@@ -106,6 +106,7 @@ private struct WindowMaskScaled: View {
         Blink1Hz(offset: sBlink)
             .mask(Blink1Hz(offset: sBlink + (1.0 - dBlink)))
             .accessibilityHidden(true)
+        
     }
 }
 
@@ -122,20 +123,32 @@ private struct SpriteTimerAnimation: View {
     var duration: Double = 18.0
     var fps: Double = 1.0
     var columnMajorSheet: Bool = true
+    var allowedFrames: [Int]? = nil   // <--- nieuw
 
     var body: some View {
         let totalFrames = max(cfg.cols * cfg.rows, 1)
+
+        // kies alle frames óf de subset die jij opgeeft
+        let baseFrames: [Int]
+        if let allowed = allowedFrames, !allowed.isEmpty {
+            baseFrames = allowed.filter { $0 >= 0 && $0 < totalFrames }
+        } else {
+            baseFrames = Array(0..<totalFrames)
+        }
+
+        // hoeveel stappen passen er in de loopduur?
         let desiredCount = max(1, Int(round(fps * max(duration, 0.0001))))
-        let framesCount = min(desiredCount, totalFrames)
-        let frames = spacedIndices(total: totalFrames, count: framesCount)
+        let framesCount = min(desiredCount, baseFrames.count)
+
+        // verdeel indices gelijkmatig
+        let frames = spacedIndices(total: baseFrames.count, count: framesCount)
+            .map { baseFrames[$0] }
 
         // slotduur is precies 1/fps
         let slot = 1.0 / max(fps, 0.0001)
-        // Adaptieve overlap (20–60 ms), nooit > ~49% van slot
         let epsilon = min(0.06, min(0.35 * slot, 0.49 * slot))
 
         return ZStack {
-            // Alle frames in één ForEach; we maskeren per frame in zijn eigen slot.
             ForEach(Array(frames.enumerated()), id: \.offset) { (k, raw) in
                 let idx = mappedIndex(raw,
                                       cols: cfg.cols,
@@ -154,72 +167,53 @@ private struct SpriteTimerAnimation: View {
                         )
                         .frame(width: size, height: size)
                     )
-                    .accessibilityHidden(true)
             }
         }
-        // Maak de hele loopduur zichtbaar, in segmenten van max. 1s
-        .mask(
-            ZStack {
-                let seconds = Int(ceil(max(duration, 0)))
-                ForEach(0..<max(seconds, 1), id: \.self) { sec in
-                    WindowMaskScaled(
-                        start: Double(sec),
-                        length: min(1.0, duration - Double(sec)),
-                        epsilon: sec == 0 ? 0.0 : 0.02, // mini-overlap tussen seconden
-                        duration: duration
-                    )
-                }
-            }
-            .frame(width: size, height: size)
-        )
         .frame(width: size, height: size)
     }
 }
+
 
 // MARK: - Gedeelde config loader
 
 private func currentSpritePathAndCfg()
 -> (path: String, cfg: SpriteSheetConfig, fps: Double, packID: String, petName: String)
 {
-    let base = FileManager.default.containerURL(
-        forSecurityApplicationGroupIdentifier: SharedStore.groupID
-    )!
-    let path = base.appendingPathComponent("current-sprite.png").path
-
     let d = SharedStore.defaults
-    let arr = (d.array(forKey: "currentCfg") as? [Int]) ?? [6, 3, 480, 480]
-    var fps = (d.object(forKey: "currentFps") as? Double) ?? 2.0
-    fps = fps.clamped(to: 1.0...2.0)
 
-    let cfg = SpriteSheetConfig(
-        cols: arr[safe: 0] ?? 6,
-        rows: arr[safe: 1] ?? 3,
-        cellPx: .init(width: CGFloat(arr[safe: 2] ?? 480),
-                      height: CGFloat(arr[safe: 3] ?? 480))
-    )
-
-    // Active pack-id + naam (best-effort)
+    // 1) Bepaal actieve pack-id
     var packID = d.string(forKey: "currentPackID")
     if packID == nil,
        let data = try? Data(contentsOf: SharedStore.indexURL),
        let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
         packID = obj["activePackId"] as? String
     }
+    let id = packID ?? "default-pack"
 
-    var petName: String = "Pet"
-    if let id = packID {
-        let manifestURL = SharedStore.packDir(id).appendingPathComponent("manifest.json")
-        if let data = try? Data(contentsOf: manifestURL),
-           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            petName = (obj["name"] as? String) ?? petName
-            if let mfps = obj["fps"] as? Double {
-                fps = mfps.clamped(to: 1.0...2.0)
-            }
-        }
-    }
+    // 2) Lees manifest van de pack
+    let packDir = SharedStore.packDir(id)
+    let manifestURL = packDir.appendingPathComponent("manifest.json")
+    let manifestData = (try? Data(contentsOf: manifestURL)) ?? Data()
+    let manifest = (try? JSONDecoder().decode(PetManifest.self, from: manifestData))
+    // kies variant (bijv. scale 3 of fallback)
+    let variant = manifest?.variants.first(where: { $0.scale == 3 }) ?? manifest?.variants.first
 
-    return (path, cfg, fps, packID ?? "default-pack", petName)
+    // 3) Bouw pad naar echte sprite in de pack
+    let spritePath = variant.map { packDir.appendingPathComponent($0.sprite).path }
+                    ?? SharedStore.containerURL.appendingPathComponent("missing.png").path
+
+    // 4) Stel cfg + fps samen
+    let cfg = SpriteSheetConfig(
+        cols: variant?.cols ?? 6,
+        rows: variant?.rows ?? 3,
+        cellPx: .init(width: CGFloat(variant?.cellPx.w ?? 480),
+                      height: CGFloat(variant?.cellPx.h ?? 480))
+    )
+    let fps = 1.0
+    let petName = manifest?.name ?? "Pet"
+    return (spritePath, cfg, fps, id, petName)
 }
+
 
 // MARK: - Widget
 
@@ -257,7 +251,8 @@ struct IslandPetLiveActivity: Widget {
                             size: 120,
                             duration: loopDuration,
                             fps: targetFPS,
-                            columnMajorSheet: false // zet true als je sheet column-major is
+                            columnMajorSheet: true, // zet true als je sheet column-major is
+                            allowedFrames: [0,1,2,3]
                         )
 
                         VStack(alignment: .leading, spacing: 4) {
@@ -274,14 +269,14 @@ struct IslandPetLiveActivity: Widget {
 
             } compactLeading: {
                 let pack = currentSpritePathAndCfg()
-                SpriteTimerAnimation(imagePath: pack.path, cfg: pack.cfg, size: 22, duration: 4.0, fps: 1.0)
+                SpriteTimerAnimation(imagePath: pack.path, cfg: pack.cfg, size: 22, duration: 4.0, fps: 1.0, allowedFrames: [0,1,2,3])
 
             } compactTrailing: {
                 EmptyView()
 
             } minimal: {
                 let pack = currentSpritePathAndCfg()
-                SpriteTimerAnimation(imagePath: pack.path, cfg: pack.cfg, size: 18, duration: 4.0, fps: 1.0)
+                SpriteTimerAnimation(imagePath: pack.path, cfg: pack.cfg, size: 18, duration: 4.0, fps: 1.0, allowedFrames: [0,1,2,3])
             }
         }
     }

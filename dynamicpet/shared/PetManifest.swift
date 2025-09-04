@@ -7,12 +7,14 @@
 import Foundation
 
 struct PetManifest: Codable {
+//    let url: String TODO?
+// let version
     let id: String
     let name: String
     let variants: [Variant]
     let fps: Double
 
-    struct Variant: Codable {
+    struct Variant: Codable { //TODO intergrate mood and game logic
         let scale: Int
         let cols: Int
         let rows: Int
